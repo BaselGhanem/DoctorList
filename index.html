@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البوابة الذكية لدليل الأطباء</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #00b4db;
+            --secondary: #0083b0;
+            --accent: #f1c40f;
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --success: #10b981;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(0, 180, 219, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(0, 131, 176, 0.15) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            position: relative;
+        }
+
+        .profile-area { text-align: center; margin-bottom: 30px; position: relative; }
+        .profile-img {
+            width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 180, 219, 0.3);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .profile-img:hover { transform: scale(1.1) rotate(5deg); }
+
+        h1, h2 {
+            font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        h3 { color: var(--primary); margin-bottom: 15px; }
+
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
+        #login-section { display: flex; flex-direction: column; align-items: center; animation: slideInDown 0.6s ease-out; }
+        
+        .input-group { width: 100%; margin-bottom: 20px; position: relative; }
+        input {
+            width: 100%; padding: 16px 20px; background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--glass-border); border-radius: 12px; color: white;
+            font-size: 16px; outline: none; transition: all 0.3s ease;
+        }
+        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.3); box-shadow: 0 0 15px rgba(0, 180, 219, 0.2); }
+
+        button {
+            width: 100%; padding: 16px 20px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer; color: white;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            box-shadow: 0 4px 15px rgba(0, 180, 219, 0.3); transition: all 0.3s ease; position: relative; overflow: hidden;
+        }
+        button:hover { box-shadow: 0 6px 20px rgba(0, 180, 219, 0.5); transform: translateY(-2px); }
+        button:active { transform: translateY(1px); }
+
+        .error-msg {
+            color: var(--error); background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2); font-size: 14px; margin-top: 15px; display: none; width: 100%; text-align: center;
+        }
+
+        #app-section { display: none; width: 100%; max-width: 1200px; padding: 30px; margin-top: 20px; align-self: flex-start; }
+
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--glass-border); }
+        .brand-area { display: flex; align-items: center; gap: 15px; }
+        .brand-area .profile-img { width: 50px; height: 50px; border-width: 2px; }
+        
+        .search-wrapper { flex: 1; max-width: 500px; position: relative; }
+        #search-input { padding-right: 50px; }
+        .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 20px; }
+
+        #status-container { text-align: center; padding: 40px; }
+        .loader { width: 48px; height: 48px; border: 5px solid #fff; border-bottom-color: var(--primary); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; margin-bottom: 15px; }
+        #status-text { color: var(--text-muted); }
+        #retry-btn { width: auto; margin-top: 15px; padding: 10px 20px; }
+
+        .layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .layout-grid { grid-template-columns: 1fr; } }
+
+        .table-container { overflow-x: auto; margin-top: 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.1); }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 400px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--glass-border); font-size: 14px; }
+        th { background: rgba(255, 255, 255, 0.02); color: var(--primary); font-weight: 700; }
+        tr:hover td { background: rgba(255, 255, 255, 0.01); color: white; }
+        td:first-child { color: var(--accent); font-family: 'Courier New', monospace; font-weight: bold; }
+
+        .no-results, .instruction-msg { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 16px; }
+
+        .highlight { color: var(--accent); background: rgba(241, 196, 15, 0.1); padding: 2px 4px; border-radius: 4px; }
+
+        /* أزرار الإجراءات للجدول */
+        .action-btn { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 6px; }
+        .add-btn { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .remove-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+        /* أزرار التصدير */
+        .export-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .export-btn { flex: 1; padding: 10px; font-size: 14px; min-width: 100px; }
+        .btn-copy { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
+        .btn-excel { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-pdf { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .btn-email { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); }
+
+        .selected-section { border-right: 1px dashed var(--glass-border); padding-right: 20px; }
+        @media (max-width: 900px) { .selected-section { border-right: none; border-top: 1px dashed var(--glass-border); padding-right: 0; padding-top: 20px; } }
+
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes slideInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.5s ease-in forwards; }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel container" id="login-section">
+        <div class="profile-area">
+            <img src="https://raw.githubusercontent.com/BaselGhanem/Portfolio/refs/heads/main/Modern%20Motivational%20Quote%20Tik%20Tok%20Video.png" 
+                 alt="باسل غانم" class="profile-img">
+        </div>
+        <h2>بوابة الوصول</h2>
+        <p class="subtitle">أدخل رمز الدخول المشفر للمتابعة</p>
+        
+        <div class="input-group">
+            <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button id="login-btn">تحقق من الهوية</button>
+        <div class="error-msg" id="login-error">🚫 الرمز غير صحيح. الوصول مرفوض.</div>
+    </div>
+
+    <div class="glass-panel" id="app-section">
+        <div class="app-header">
+            <div class="brand-area">
+                <img src="https://raw.githubusercontent.com/BaselGhanem/Portfolio/refs/heads/main/Modern%20Motivational%20Quote%20Tik%20Tok%20Video.png" 
+                     alt="باسل غانم" class="profile-img">
+                <div>
+                    <h1>دليل الأطباء</h1>
+                    <p class="subtitle" style="margin:0">البحث الذكي الفوري بالاسم</p>
+                </div>
+            </div>
+            
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="ابحث باسم الطبيب (3 أحرف على الأقل)..." autocomplete="off">
+            </div>
+        </div>
+
+        <div id="status-container">
+            <div class="loader" id="loader"></div>
+            <p id="status-text">جاري مزامنة قاعدة البيانات...</p>
+            <button id="retry-btn" style="display:none;">إعادة المحاولة</button>
+        </div>
+
+        <div id="data-body" style="display: none;" class="fade-in layout-grid">
+            
+            <div>
+                <h3>نتائج البحث</h3>
+                <div class="instruction-msg" id="instruction-msg">
+                    ✍️ يرجى كتابة 3 أحرف على الأقل في صندوق البحث لعرض النتائج.
+                </div>
+                
+                <div class="table-container" id="results-container" style="display: none;">
+                    <table id="results-table">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>اسم الطبيب</th>
+                                <th>التخصص</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+                <div class="no-results" id="no-results" style="display: none;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">🕵️‍♂️</div>
+                    لم نجد أي طبيب يطابق هذا الاسم.
+                </div>
+            </div>
+
+            <div class="selected-section">
+                <h3>الأطباء المحددين</h3>
+                <div class="table-container" id="selected-table-wrapper">
+                    <table id="selected-table">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>الاسم</th>
+                                <th>التخصص</th>
+                                <th class="no-print">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selected-body">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لم يتم تحديد أي طبيب بعد</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="export-actions" id="export-actions" style="display: none;">
+                    <button class="export-btn btn-copy" onclick="copySelected()">📋 نسخ</button>
+                    <button class="export-btn btn-excel" onclick="downloadExcel()">📊 إكسل</button>
+                    <button class="export-btn btn-pdf" onclick="downloadPDF()">📄 PDF</button>
+                    <button class="export-btn btn-email" onclick="sendEmail()">✉️ إيميل</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://raw.githubusercontent.com/BaselGhanem/DoctorList/refs/heads/main/Doctor%20List.csv';
+        let doctorsData = [];
+        let selectedDoctors = []; // مصفوفة لتخزين الأطباء المختارين
+
+        const ui = {
+            login: document.getElementById('login-section'),
+            app: document.getElementById('app-section'),
+            pass: document.getElementById('password-input'),
+            loginBtn: document.getElementById('login-btn'),
+            loginError: document.getElementById('login-error'),
+            search: document.getElementById('search-input'),
+            status: document.getElementById('status-container'),
+            loader: document.getElementById('loader'),
+            statusText: document.getElementById('status-text'),
+            retryBtn: document.getElementById('retry-btn'),
+            dataBody: document.getElementById('data-body'),
+            tableBody: document.getElementById('table-body'),
+            resultsContainer: document.getElementById('results-container'),
+            noResults: document.getElementById('no-results'),
+            instructionMsg: document.getElementById('instruction-msg'),
+            selectedBody: document.getElementById('selected-body'),
+            exportActions: document.getElementById('export-actions')
+        };
+
+        // --- نظام تسجيل الدخول ---
+        ui.loginBtn.addEventListener('click', checkPassword);
+        ui.pass.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+        ui.pass.focus();
+
+        function checkPassword() {
+            if (ui.pass.value === '4321') {
+                ui.login.style.display = 'none';
+                ui.app.style.display = 'block';
+                document.body.style.justifyContent = 'flex-start';
+                initializeSystem();
+            } else {
+                ui.loginError.style.display = 'block';
+                ui.pass.value = ''; ui.pass.focus();
+                ui.login.style.animation = 'none';
+                void ui.login.offsetWidth;
+                ui.login.style.animation = 'shake 0.5s';
+            }
+        }
+
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(`@keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            10%, 30%, 50%, 70%, 90% {transform: translateX(-5px);}
+            20%, 40%, 60%, 80% {transform: translateX(5px);}
+        }`, styleSheet.cssRules.length);
+
+        // --- النظام الأساسي وتحميل البيانات ---
+        function initializeSystem() {
+            ui.search.addEventListener('input', handleSearch);
+            loadCSVData();
+            ui.retryBtn.addEventListener('click', loadCSVData);
+        }
+
+        async function loadCSVData() {
+            showStatus('loading', 'جاري تحميل جدول الأطباء من الخادم...');
+            try {
+                const nocacheUrl = `${CSV_URL}?t=${new Date().getTime()}`;
+                const response = await fetch(nocacheUrl);
+                if (!response.ok) throw new Error(`خطأ: ${response.status}`);
+                const csvText = await response.text();
+                doctorsData = parseCSV(csvText);
+
+                if (doctorsData.length === 0) throw new Error('الملف فارغ أو غير مدعوم.');
+                showStatus('success');
+                ui.search.focus();
+            } catch (error) {
+                showStatus('error', `عذراً، حدث خلل: ${error.message}`);
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) return [];
+
+            const headers = parseCSVLine(lines[0]).map(h => h.trim());
+            let colMap = { code: -1, name: -1, spec: -1, area: -1 };
+            headers.forEach((h, i) => {
+                if(/كود|code/i.test(h)) colMap.code = i;
+                if(/اسم|name/i.test(h)) colMap.name = i;
+                if(/تخصص|special/i.test(h)) colMap.spec = i;
+                if(/منطق|area/i.test(h)) colMap.area = i;
+            });
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length >= headers.length) {
+                    data.push({
+                        Code: colMap.code !== -1 ? values[colMap.code] : 'N/A',
+                        Name: values[colMap.name] || '',
+                        Specialty: colMap.spec !== -1 ? values[colMap.spec] : '',
+                        Area: colMap.area !== -1 ? values[colMap.area] : ''
+                    });
+                }
+            }
+            return data;
+        }
+
+        function parseCSVLine(line) {
+            const arr = []; let quote = false; let col = '';
+            for (let c = 0; c < line.length; c++) {
+                let char = line[c], nextChar = line[c+1];
+                if (char == '"' && quote && nextChar == '"') { col += char; c++; continue; } 
+                if (char == '"') { quote = !quote; continue; }
+                if (char == ',' && !quote) { arr.push(col); col = ''; continue; }
+                col += char;
+            }
+            arr.push(col); return arr;
+        }
+
+        // --- محرك البحث والعرض ---
+        let searchTimer;
+        function handleSearch(e) {
+            clearTimeout(searchTimer);
+            const query = e.target.value.trim();
+
+            if (query.length < 3) {
+                ui.instructionMsg.style.display = 'block';
+                ui.resultsContainer.style.display = 'none';
+                ui.noResults.style.display = 'none';
+                return;
+            }
+
+            ui.instructionMsg.style.display = 'none';
+
+            searchTimer = setTimeout(() => {
+                if (doctorsData.length === 0) return;
+                const results = performSearch(query);
+                renderSearchTable(results, query);
+            }, 300);
+        }
+
+        function performSearch(query) {
+            let escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            try {
+                const regex = new RegExp(escapedQuery, 'i');
+                // البحث في الاسم فقط
+                return doctorsData.filter(doc => regex.test(doc.Name));
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function renderSearchTable(data, query) {
+            ui.tableBody.innerHTML = '';
+            if (data.length === 0) {
+                ui.resultsContainer.style.display = 'none';
+                ui.noResults.style.display = 'block';
+                return;
+            }
+
+            ui.resultsContainer.style.display = 'block';
+            ui.noResults.style.display = 'none';
+
+            data.forEach(doc => {
+                const tr = document.createElement('tr');
+                const isSelected = selectedDoctors.some(d => d.Code === doc.Code);
+                
+                tr.innerHTML = `
+                    <td>${escapeHTML(doc.Code)}</td>
+                    <td><strong>${highlightText(doc.Name, query)}</strong></td>
+                    <td>${escapeHTML(doc.Specialty)}</td>
+                    <td>
+                        <button class="action-btn ${isSelected ? 'remove-btn' : 'add-btn'}" 
+                                onclick="${isSelected ? `removeDoctor('${escapeHTML(doc.Code)}')` : `addDoctor('${escapeHTML(doc.Code)}')`}">
+                            ${isSelected ? '➖ إزالة' : '➕ إضافة'}
+                        </button>
+                    </td>
+                `;
+                ui.tableBody.appendChild(tr);
+            });
+        }
+
+        // --- إدارة الأطباء المحددين ---
+        window.addDoctor = function(code) {
+            const doc = doctorsData.find(d => d.Code === code);
+            if (doc && !selectedDoctors.some(d => d.Code === code)) {
+                selectedDoctors.push(doc);
+                renderSelectedTable();
+                handleSearch({ target: ui.search }); // لتحديث حالة الزر في جدول البحث
+            }
+        };
+
+        window.removeDoctor = function(code) {
+            selectedDoctors = selectedDoctors.filter(d => d.Code !== code);
+            renderSelectedTable();
+            handleSearch({ target: ui.search }); // لتحديث حالة الزر في جدول البحث
+        };
+
+        function renderSelectedTable() {
+            ui.selectedBody.innerHTML = '';
+            
+            if (selectedDoctors.length === 0) {
+                ui.selectedBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لم يتم تحديد أي طبيب بعد</td></tr>`;
+                ui.exportActions.style.display = 'none';
+                return;
+            }
+
+            ui.exportActions.style.display = 'flex';
+            selectedDoctors.forEach(doc => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHTML(doc.Code)}</td>
+                    <td><strong>${escapeHTML(doc.Name)}</strong></td>
+                    <td>${escapeHTML(doc.Specialty)}</td>
+                    <td class="no-print">
+                        <button class="action-btn remove-btn" onclick="removeDoctor('${escapeHTML(doc.Code)}')">➖</button>
+                    </td>
+                `;
+                ui.selectedBody.appendChild(tr);
+            });
+        }
+
+        // --- وظائف التصدير ---
+        window.copySelected = function() {
+            let text = "الكود\tاسم الطبيب\tالتخصص\tالمنطقة\n";
+            selectedDoctors.forEach(d => {
+                text += `${d.Code}\t${d.Name}\t${d.Specialty}\t${d.Area}\n`;
+            });
+            navigator.clipboard.writeText(text).then(() => alert('تم نسخ الجدول بنجاح!'));
+        };
+
+        window.downloadExcel = function() {
+            // \uFEFF لحل مشكلة اللغة العربية في Excel (BOM)
+            let csv = '\uFEFFالكود,اسم الطبيب,التخصص,المنطقة\n';
+            selectedDoctors.forEach(d => {
+                csv += `${d.Code},"${d.Name}","${d.Specialty}","${d.Area}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Selected_Doctors.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.downloadPDF = function() {
+            // إخفاء عمود الإجراءات مؤقتاً قبل الطباعة
+            const styles = document.createElement('style');
+            styles.innerHTML = `.no-print { display: none !important; }`;
+            document.head.appendChild(styles);
+
+            const element = document.getElementById('selected-table-wrapper');
+            const opt = {
+                margin:       0.5,
+                filename:     'Selected_Doctors.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#0f172a' },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.head.removeChild(styles); // إعادة عمود الإجراءات
+            });
+        };
+
+        window.sendEmail = function() {
+            let body = "قائمة الأطباء المحددين:\n\n";
+            selectedDoctors.forEach(d => {
+                body += `- ${d.Name} | ${d.Specialty} | ${d.Area}\n`;
+            });
+            const mailto = `mailto:?subject=قائمة الأطباء&body=${encodeURIComponent(body)}`;
+            window.location.href = mailto; // سيقوم بفتح Outlook أو تطبيق البريد الافتراضي
+        };
+
+        // --- وظائف مساعدة ---
+        function highlightText(text, query) {
+            if (!query) return escapeHTML(text);
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            return escapeHTML(text).replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function showStatus(state, message = '') {
+            ui.status.style.display = 'block'; ui.dataBody.style.display = 'none';
+            ui.retryBtn.style.display = 'none'; ui.loader.style.display = 'none';
+
+            if (state === 'loading') {
+                ui.loader.style.display = 'inline-block'; ui.statusText.innerText = message; ui.statusText.style.color = 'var(--text-muted)';
+            } else if (state === 'error') {
+                ui.statusText.innerText = message; ui.statusText.style.color = 'var(--error)'; ui.retryBtn.style.display = 'inline-block';
+            } else if (state === 'success') {
+                ui.status.style.display = 'none'; ui.dataBody.style.display = 'grid'; // تغيير إلى Grid
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            str = String(str);
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
+    </script>
+</body>
+</html>
