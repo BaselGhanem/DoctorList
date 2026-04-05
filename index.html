@@ -855,17 +855,25 @@
             }, 250); // Snappier response
         }
 
-       function performSearch(query) {
-    // نقوم بتقسيم النص بناءً على النجمة (*) وتجهيز كل جزء ليكون آمناً 
-    // ثم نربطها بـ .* لتمثل (أي عدد من الحروف بين الكلمتين)
-    let escapedQuery = query.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-    
-    try {
-        const regex = new RegExp(escapedQuery, 'i');
-        return doctorsData.filter(doc => regex.test(doc.Name));
-    } catch (e) {
-        return [];
-    }
+function normalize(text) {
+    return text
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function performSearch(query) {
+    const parts = query.split('*').map(p => normalize(p)).filter(p => p);
+
+    return doctorsData.filter(doc => {
+        const name = normalize(doc.Name);
+
+        // كل جزء لازم يكون موجود بالاسم
+        return parts.every(part => name.includes(part));
+    });
 }
 
         function renderSearchTable(data, query) {
